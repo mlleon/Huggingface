@@ -2,23 +2,27 @@ import os
 import re
 import requests
 import logging
+from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from requests.exceptions import RequestException, HTTPError
 
-# Configure logging
+# 配置日志记录
 logging.basicConfig(filename='scraper.log', level=logging.ERROR)
 
 
 def get_file_urls(model_name):
+    """
+    获取文件URL列表
+    """
     original_text = "https://hf-mirror.com/ByteDance/AnimateDiff-Lightning/"
     new_text = f"https://hf-mirror.com/{model_name}/"
     link_base = re.sub(re.escape(original_text), new_text, original_text)
-    repo_url = f"{link_base}tree/main"  # Construct model repository link
+    repo_url = urljoin(link_base, 'tree/main')  # 构造模型存储库链接
 
     file_url_list = []
     try:
         response = requests.get(repo_url)
-        response.raise_for_status()  # Check HTTP status code
+        response.raise_for_status()  # 检查HTTP状态码
         html_doc = response.text
 
         soup = BeautifulSoup(html_doc, 'html.parser')
@@ -27,47 +31,69 @@ def get_file_urls(model_name):
             filename_span = link.find('span', class_='truncate group-hover:underline')
             if filename_span:
                 filename = filename_span.text
-                file_url = f"{link_base}resolve/main/{filename}?download=true"
+                file_url = urljoin(link_base, f"resolve/main/{filename}?download=true")
                 print(file_url)
                 file_url_list.append(file_url)
-    except HTTPError as e:
-        logging.error(f"HTTP Error: {e}")
-        return []
-    except RequestException as e:
-        logging.error(f"Request Error: {e}")
-        return []
-
-    model_name_with_underscore = model_name.replace("-", "_")
-
-    # Extract directory name from model_name
-    directory_name = os.path.dirname(model_name_with_underscore)
-    output_directory = f"./{directory_name}"
-
-    # Create the directory if it doesn't exist
-    try:
-        os.makedirs(output_directory, exist_ok=True)  # Use exist_ok to handle directory existence
-    except OSError as e:
-        logging.error(f"Failed to create directory: {e}")
-        return []
-
-    output_file = f"{output_directory}/{os.path.basename(model_name_with_underscore)}.txt"
-
-    # Check if the file is empty
-    if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
-        print("File is not empty. Skipping writing to the TXT file.")
-        return file_url_list
-
-    # Write to file
-    try:
-        with open(output_file, 'a') as f:
-            for file_url in file_url_list:
-                f.write(f"{file_url}\n")
-    except OSError as e:
-        logging.error(f"Failed to write to file: {e}")
+    except (HTTPError, RequestException) as e:
+        logging.error(f"Request Error:{e}")
         return []
 
     return file_url_list
 
 
-# Call the function and specify the output file path
-file_urls = get_file_urls("cardiffnlp/twitter-roberta-base-sentiment-latest")
+def create_directory(directory):
+    """
+    创建目录
+    """
+    try:
+        os.makedirs(directory, exist_ok=True)
+    except OSError as e:
+        logging.error(f"Failed to create directory: {e}")
+        return False
+    return True
+
+
+def write_urls_to_file(file_urls, output_file):
+    """
+    将URL写入文件
+    """
+    try:
+        with open(output_file, 'a') as f:
+            for file_url in file_urls:
+                f.write(f"{file_url}\n")
+    except OSError as e:
+        logging.error(f"Failed to write to file:{e}")
+        return False
+    return True
+
+
+def main(model_name):
+    """
+    主函数
+    """
+    file_urls = get_file_urls(model_name)
+    if not file_urls:
+        return
+
+    model_name_with_underscore = model_name.replace("-", "_")
+
+    # 提取目录名
+    directory_name = os.path.dirname(model_name_with_underscore)
+    output_directory = os.path.join(".", directory_name)
+
+    if not create_directory(output_directory):
+        return
+
+    output_file = os.path.join(output_directory, f"{os.path.basename(model_name_with_underscore)}.txt")
+
+    # 检查文件是否为空
+    if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
+        print("File is not empty. Skipping writing to the TXT file.")
+        return
+
+    if write_urls_to_file(file_urls, output_file):
+        print("The URL has been written to the file.")
+
+
+if __name__ == "__main__":
+    main("cardiffnlp/twitter-roberta-base-sentiment-latest")
