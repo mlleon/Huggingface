@@ -1,0 +1,43 @@
+import re
+import requests
+from bs4 import BeautifulSoup
+from requests.exceptions import RequestException
+
+
+def get_file_urls(model_name):
+    original_text = "https://hf-mirror.com/ByteDance/AnimateDiff-Lightning/"
+    new_text = f"https://hf-mirror.com/{model_name}/"
+    link_base = re.sub(re.escape(original_text), new_text, original_text)
+    repo_url = f"{link_base}tree/main"  # Construct model repository link
+
+    file_url_list = []
+    try:
+        response = requests.get(repo_url)
+        response.raise_for_status()
+        html_doc = response.text
+
+        soup = BeautifulSoup(html_doc, 'html.parser')
+        file_links = soup.find_all('a')
+        for link in file_links:
+            filename_span = link.find('span', class_='truncate group-hover:underline')
+            if filename_span:
+                filename = filename_span.text
+                file_url = f"{link_base}resolve/main/{filename}?download=true"
+                file_url_list.append(file_url)
+    except RequestException as e:
+        print(f"Error fetching page: {e}")
+        return []
+
+    model_name_with_underscore = model_name.replace("-", "_")
+    output_file = f"./{model_name_with_underscore}.txt"
+
+    # Write to file
+    with open(output_file, 'a') as f:
+        for file_url in file_url_list:
+            f.write(f"{file_url}\n")
+
+    return file_url_list
+
+
+# Call the function and specify the output file path
+file_urls = get_file_urls("google-bert/bert-base-uncased")
