@@ -85,6 +85,10 @@ def main(model_name):
         return
 
     output_file = os.path.join(output_directory, f"{os.path.basename(model_name_with_underscore)}.txt")
+    output_file_directory = os.path.join(output_directory, f"{os.path.basename(model_name_with_underscore)}")
+
+    if not create_directory(output_file_directory):
+        return
 
     # 检查文件是否为空
     if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
