@@ -100,4 +100,4 @@ def main(model_name):
 
 
 if __name__ == "__main__":
-    main("cardiffnlp/twitter-roberta-base-sentiment-latest")
+    main("coqui/XTTS-v2")
