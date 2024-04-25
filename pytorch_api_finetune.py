@@ -8,7 +8,7 @@ from transformers import AdamW, get_scheduler
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # 1、加载模型和预训练权重
-checkpoint = r"F:\pythonProject\google_bert\bert_base_uncased"
+checkpoint = r"E:\gitlocal\huggingface\google_bert\bert_base_uncased"
 tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
 

@@ -79,7 +79,7 @@ def main(model_name):
 
     # 提取目录名
     directory_name = os.path.dirname(model_name_with_underscore)
-    output_directory = os.path.join(".", directory_name)
+    output_directory = os.path.join(".", "model_weights", directory_name)
 
     if not create_directory(output_directory):
         return
@@ -100,4 +100,4 @@ def main(model_name):
 
 
 if __name__ == "__main__":
-    main("coqui/XTTS-v2")
+    main("google-bert/bert-base-uncased")
